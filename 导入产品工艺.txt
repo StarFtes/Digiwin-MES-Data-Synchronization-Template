@@ -1,0 +1,61 @@
+SELECT
+it2.IMAA001 as	"item_no",	--string(40) 品号
+it.IMAAL003	AS "item_name",	--string(80) 品名
+it.IMAAL004	AS "item_spec",	--string(255) 规格
+ '' AS 	"description",	--text 说明
+it2.IMAA009 AS "type_no",	--string(20) 产品分类
+ 'Y' AS 	"is_default",	--string(1) 是否为默认工艺 Y/N
+ et.ECBB003	AS "op_seq",	--integer 生产顺序
+et.ECBB004	AS "op_no",	--string(20) 工艺编号
+ot.OOCQL004	AS "op_name",	--string(50) 工艺名称
+ st.SFDIUC004  AS 	"item_op_desc",	--string(100) 产品工艺说明 
+ 'N' AS "report_enable",	--string(1) 换算启用 Y=勾選,N=未勾選。
+ 0 AS "report_base_qty",	--number(16,6) 报工批量 报工批量
+ '9999' AS	"report_unit",	--string(20) 报工单位 报工时依报工单位换算生产数量
+  0 AS "report_qty",	--number(16,6) 报工换算量 一个报工单位换算的数量
+et.ECBB026 AS 	"fix_time",	--number(16,6) 固定机时 每个生产任务前固定耗用时间，与生产数量无关
+et.ECBB027 AS 	"var_time",	--number(16,6) 变动机时 与生产数量有关
+et.ECBB024 AS 	"fix_man_time",	--number(16,6) 固定人时
+et.ECBB025 AS 	"var_man_time",	--number(16,6) 变动人时
+ 1 AS 	"base_qty",	--number(16,6) 工时批量 变动工时的批量
+ 'N' AS 	"wip_qty_control",	--string(1)移轉量控卡(Y/N)
+it2.IMAACRTDT AS "create_date",	--datetime 建立时间
+it2.IMAACRTID  AS 	"create_by",	--string(100) 建立人员
+it2.IMAAMODDT AS 	"last_update_date",	--datetime 最后修改时间
+it2.IMAAMODID AS 	"last_update_by",	--string(100) 最后修改人员
+et.ECBB013 	AS "os_flag",	--string(1) 委外生产 
+ '' AS 	"partner_no",	--string(100) 委外商编号 
+ '' AS 	"partner_name",	--string(100) 委外商名称 
+ '' AS 	"price_mode",	--string(1) 計價方式
+et.ECBB029 AS 	"op_price"	--number(16,6) 單價
+FROM   
+(SELECT   IMAAENT,
+		IMAA001 ,
+		it.IMAAL003	,
+        it.IMAAL004	,
+        IMAA004,
+        IMAA009 ,
+       'GY' as  GYCP,
+        'N04' AS LX,
+        IMAACRTDT,
+        IMAACRTID,
+        IMAAMODDT, 
+        IMAAMODID
+FROM  DSDATA.IMAA_T  
+LEFT JOIN DSDATA.RTAX_T   
+     ON IMAAENT=RTAXENT AND IMAA009=RTAX001    
+LEFT JOIN DSDATA.IMAAL_T it ON IMAAENT =it.IMAALENT AND IMAA001 =it.IMAAL001 AND it.IMAAL002='zh_CN'
+ WHERE IMAAENT='9999'    and IMAA004 ='A' -- and    IMAA009 ='MA0101'  
+ AND IMAAL003 ='垫板'
+  )  it2 
+LEFT JOIN DSDATA.ECBA_T et2 ON it2.IMAAENT =et2.ECBAENT AND it2.GYCP =et2.ECBA001  AND it2.LX =et2.ECBA002   AND  et2.ECBASITE ='YA'
+LEFT JOIN DSDATA.ECBB_T et ON et2.ECBAENT=et.ECBBENT AND et2.ECBA001= et.ECBB001   AND et2.ECBA002 =et.ECBB002  AND et2.ECBASITE=et.ECBBSITE 
+LEFT JOIN DSDATA.IMAAL_T it ON it2.IMAAENT =it.IMAALENT AND it2.IMAA001 =it.IMAAL001 AND it.IMAAL002='zh_CN'
+LEFT JOIN DSDATA.OOCQL_T ot ON et.ECBBENT =ot.OOCQLENT AND et.ECBB004 =ot.OOCQL002 AND ot.OOCQL003 ='zh_CN'
+LEFT JOIN DSDATA.SFDIUC_T st  ON it2.IMAAL003=st.SFDIUC001 AND  it2.IMAAENT=st.SFDIUCENT AND et.ECBB004=st.SFDIUC002 
+LEFT JOIN DSDATA.RTAX_T rt ON it2.IMAAENT =rt.RTAXENT AND it2.IMAA009 = rt.RTAX001  
+WHERE
+	ECBBENT ='9999'	  AND ot.OOCQl001 ='221'  
+   -- and  (to_char(it2.IMAACRTDT,'yyyy-MM-dd HH24:MI:SS')>=':LastUpdTime'   OR   to_char(it2.IMAAMODDT,'yyyy-MM-dd HH24:MI:SS')>=':LastUpdTime'   )
+ORDER BY it2.IMAA001 ,et.ECBB003  --排序
+ -- OFFSET  4000  ROWS  FETCH NEXT 1000 ROWS ONLY

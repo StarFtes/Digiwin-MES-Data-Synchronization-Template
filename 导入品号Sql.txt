@@ -1,0 +1,58 @@
+SELECT --IMAAENT,IMAA004 ,IMAESITE,
+IMAA001 AS "item_no",--品号
+        imaal003 AS "item_name",--品名
+        replace(imaal004,chr(39),chr(39) || chr(39)) AS "item_spec",--规格
+        NVL('','') AS "description",  --string(255) 说明 
+        '1' item_type, --string(10) 品号类別 1:产品, 2:材料
+        NVL(imae017,0) AS "std_lot_qty",--标准批量 开立生产批的默认标准批量
+        imaa009 AS "type_no",--分类编号
+        NVL(rtaxl003,'') AS "type_name",--分类名称
+        CASE WHEN imaastus ='Y' THEN 'Y'  ELSE 'X' END  AS "status", --状态
+        '' "wh_judge", --string(10) 入库控制 Y:有效, N:无效
+        to_char(imaacrtdt,'yyyy-MM-dd HH24:MI:SS') as "create_date", --datetime 建立时间 
+        imaacrtid AS "create_by",   --string(100) 建立人员 
+        to_char(imaamoddt,'yyyy-MM-dd HH24:MI:SS') AS "last_update_date",  --datetime 最后修改时间
+        imaamodid AS "last_update_by"  --string(100) 最后修改人员
+FROM  DSDEMO.IMAA_T   --料件主档
+LEFT JOIN DSDEMO.IMAAL_T  --料件多语言档
+        --企业编号；料号；语言编号
+     ON IMAAENT=IMAALENT AND IMAA001=IMAAL001 AND IMAAL002='zh_CN'
+LEFT JOIN DSDEMO.IMAE_t   --料件据点制造档
+        --企业编号；据点；料号；
+     ON IMAAENT=IMAEENT AND IMAA001=IMAE001  AND IMAESITE ='ALL' 
+LEFT JOIN DSDEMO.OOFF_T   --备注档
+        --企业编号；备注类型：3料号备注
+     ON IMAAENT=OOFFENT AND OOFF001=3 AND OOFF002=IMAA001
+LEFT JOIN DSDEMO.RTAXL_T   --品类基本数据多语言档
+        --企业编号；品类编号；语系
+     ON IMAAENT=RTAXLENT AND IMAA009=RTAXL001 AND RTAXL002='zh_CN'
+ WHERE IMAAENT=6   and IMAA004 ='A'    --and    imaa009 in ('11','21','HL01.02.','HL03.01.')  
+  and  (to_char(imaacrtdt,'yyyy-MM-dd HH24:MI:SS')>=':LastUpdTime'   OR   to_char(imaamoddt,'yyyy-MM-dd HH24:MI:SS')>=':LastUpdTime'   )
+
+
+
+
+
+REPLACE(原字符串, 要替换的子串, 替换后的子串)
+
+
+NVL 是 Oracle 专属函数（MySQL 对应 IFNULL、SQL Server 对应 ISNULL），语法：
+sql
+NVL(表达式1, 表达式2)
+作用：判断 表达式1 的值：
+如果 表达式1 是 NULL，返回 表达式2；
+如果 表达式1 不是 NULL（包括空字符串 ''、数值 0 等），直接返回 表达式1。
+
+
+CASE 
+  WHEN imaastus = 'Y' THEN 'Y'  -- 条件1：如果imaastus等于'Y'，返回'Y'
+  ELSE 'X'                      -- 其他所有情况（包括NULL、'N'、''等），返回'X'
+END AS "status"                 -- 给判断结果起别名"status"（状态）
+
+
+to_char()	        Oracle 专属的类型转换函数，核心作用是将日期 / 数值类型转为字符串类型（其他数据库有对应替代函数）。
+imaacrtdt	要转换的字段名（日期类型，通常是 “创建时间” 字段，比如物料 / 商品的创建时间）。
+'yyyy-MM-dd HH24:MI:SS'	  日期格式化模板，定义转换后的字符串格式（关键！需严格遵守 Oracle 格式符规则）。
+as "create_date"	   给转换后的字符串字段起别名 create_date（创建日期），双引号固定别名格式。
+
+
